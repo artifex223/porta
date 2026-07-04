@@ -1,0 +1,11 @@
+packages:
+  - packages/proxy
+  - packages/web
+
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+
+onlyBuiltDependencies:
+  - '@swc/core'
+  - esbuild

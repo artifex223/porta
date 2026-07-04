@@ -1,0 +1,294 @@
+/* ── Typing indicator ── */
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.typing-indicator span {
+  width: 6px;
+  height: 6px;
+  background: var(--text-tertiary);
+  border-radius: 50%;
+  animation: typing-bounce 1.4s infinite ease-in-out both;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: 0s;
+}
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ── System messages ── */
+
+.message.system .message-body {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.message.system {
+  width: 100%;
+}
+
+/* Info card: notification-style system messages using step-card layout */
+
+.info-card .step-card-header {
+  cursor: default;
+}
+
+.info-card-text {
+  color: var(--text-secondary);
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.info-card-text p {
+  margin: 0;
+}
+
+/* ── Thinking block ── */
+
+.thinking-block {
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  user-select: none;
+  list-style: none;
+}
+
+.thinking-header::-webkit-details-marker {
+  display: none;
+}
+
+.thinking-chevron {
+  font-size: 10px;
+  transition: transform var(--transition-fast);
+  display: inline-block;
+}
+
+details[open] .thinking-chevron {
+  transform: rotate(90deg);
+}
+
+.thinking-label {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.thinking-content {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgb(var(--c-lift) / 0.02);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Implementation plan panel */
+
+.implementation-plan-block {
+  margin-bottom: 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgb(var(--c-lift) / 0.03);
+  overflow: hidden;
+}
+
+.implementation-plan-block.live {
+  border-color: rgb(var(--c-accent) / 0.45);
+  background: rgb(var(--c-accent) / 0.07);
+  box-shadow: 0 0 0 1px rgb(var(--c-accent) / 0.12) inset;
+}
+
+.implementation-plan-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 8px 10px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 12px;
+  user-select: none;
+  list-style: none;
+}
+
+.implementation-plan-header:hover {
+  background: rgb(var(--c-lift) / 0.04);
+  color: var(--text-primary);
+}
+
+.implementation-plan-header::-webkit-details-marker {
+  display: none;
+}
+
+.implementation-plan-icon,
+.implementation-plan-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-accent);
+}
+
+.implementation-plan-label {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.implementation-plan-meta {
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.implementation-plan-live-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgb(var(--c-accent) / 0.16);
+  color: var(--text-accent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.implementation-plan-action {
+  flex-shrink: 0;
+  color: var(--text-accent);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.implementation-plan-chevron {
+  transition: transform var(--transition-fast);
+}
+
+.implementation-plan-block[open] .implementation-plan-chevron {
+  transform: rotate(180deg);
+}
+
+.implementation-plan-content {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 10px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.implementation-plan-content > :first-child {
+  margin-top: 0;
+}
+
+.implementation-plan-content > :last-child {
+  margin-bottom: 0;
+}
+
+.implementation-plan-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.implementation-plan-copy {
+  width: 24px;
+  height: 24px;
+}
+
+.pinned-implementation-plan-message {
+  width: 100%;
+}
+
+.pinned-implementation-plan-body.live {
+  background: rgb(var(--c-accent) / 0.04);
+  border-color: rgb(var(--c-accent) / 0.22);
+}
+
+.pinned-implementation-plan-body .implementation-plan-block {
+  margin-bottom: 0;
+}
+
+/* Message action buttons (copy, revert) */
+
+.msg-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+  justify-content: flex-end;
+}
+
+.msg-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  padding: 0;
+}
+
+.msg-action-btn.locked {
+  cursor: not-allowed;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+/* ── Connection indicator ── */
+
+.conn-status {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
