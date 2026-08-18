@@ -256,6 +256,9 @@ export function registerConversationRoutes(app: Hono): void {
               const oldCount = (existing?.stepCount as number) ?? -1;
               if (!existing || newCount > oldCount) {
                 merged[id] = normalizedSummary;
+                if (newCount > 0) {
+                  conversationInstanceAffinity.set(id, inst);
+                }
               }
             }
           } catch {

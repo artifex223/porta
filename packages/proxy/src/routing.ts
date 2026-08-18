@@ -30,7 +30,7 @@ export function extractTargetAppDataDir(c: {
     c.req.query("targetApp") ||
     c.req.query("appDataDir");
   if (!val || val === "all") return undefined;
-  if (val === "antigravity" || val === "antigravity-ide") return val;
+  if (val === "antigravity" || val === "antigravity-ide" || val === "antigravity-cli") return val;
   return undefined;
 }
 
@@ -108,11 +108,8 @@ export class PersistentMap extends Map<string, string> {
     try {
       mkdirSync(dirname(this.filePath), { recursive: true });
       const tmpPath = `${this.filePath}.tmp`;
-      writeFileSync(
-        tmpPath,
-        `${JSON.stringify(Object.fromEntries(this), null, 2)}\n`,
-        "utf-8",
-      );
+      const entries = Array.from(this.entries());
+      writeFileSync(tmpPath, JSON.stringify(entries, null, 2), "utf-8");
       renameSync(tmpPath, this.filePath);
     } catch (err) {
       this.warnOnce("write", err);
@@ -135,7 +132,7 @@ export class PersistentMap extends Map<string, string> {
  * and used to route RPC calls to the correct LS instance.
  */
 export const conversationAffinity = new PersistentMap(); // cascadeId → workspaceId
-export const conversationInstanceAffinity = new Map<string, LSInstance>(); // cascadeId → unscoped hub LS
+export const conversationInstanceAffinity = new Map<string, LSInstance>(); // cascadeId → specific LSInstance
 
 /** Convert a workspace URI to the LS workspaceId format. */
 export function uriToWorkspaceId(uri: string): string {
@@ -277,11 +274,6 @@ export async function discoverOwnerInstance(
       return wsOwners[0].inst;
     }
 
-    // Antigravity 2.x can expose a standalone hub LS without a workspaceId.
-    // When exactly one unscoped LS reports this workspace-backed conversation,
-    // that LS is the only concrete owner signal available and is safe for both
-    // reads and writes. If multiple unscoped LSes report it, only reads may use
-    // the heuristic ranking below; writes stay conservative.
     const unscopedOwners = candidates.filter((c) => !c.inst.workspaceId);
     if (unscopedOwners.length === 1) {
       conversationInstanceAffinity.set(cascadeId, unscopedOwners[0].inst);
@@ -325,21 +317,12 @@ export async function discoverOwnerInstance(
 /**
  * Like rpcForConversation, but also returns which LS instance was used.
  * Use this when subsequent calls must be pinned to the same LS.
- *
- * Resolution strategy:
- *   1. Pinned instance (caller override) → use directly.
- *   2. Affinity cache hit → use that LS.
- *   3. Cache miss → discover owner via GetAllCascadeTrajectories
- *      (pick LS with highest stepCount). Fail if not found anywhere.
  */
 export async function resolveAndCall<T>(
   method: string,
   cascadeId: string,
   body: Record<string, unknown> = {},
   pinnedInstance?: LSInstance,
-  /** When true, enables try-all fallback for disk-only conversations.
-   *  Must be false for mutation RPCs and when the returned instance
-   *  will be pinned for subsequent writes. */
   readOnly = false,
   targetAppDataDir?: string,
 ): Promise<{ data: T; instance: LSInstance }> {
@@ -368,7 +351,9 @@ export async function resolveAndCall<T>(
       } catch (err) {
         if (
           err instanceof RPCError &&
-          (err.code === "unavailable" || err.code === "not_found")
+          (err.code === "unavailable" ||
+            err.code === "not_found" ||
+            err.message.includes("trajectory not found"))
         ) {
           conversationInstanceAffinity.delete(cascadeId);
           discovery.invalidateCache();
@@ -396,14 +381,16 @@ export async function resolveAndCall<T>(
       } catch (err) {
         if (
           err instanceof RPCError &&
-          (err.code === "unavailable" || err.code === "not_found")
+          (err.code === "unavailable" ||
+            err.code === "not_found" ||
+            err.message.includes("trajectory not found"))
         ) {
           // Affinity LS is dead or lost the conversation — clear stale affinity and re-discover
           conversationAffinity.delete(cascadeId);
+          conversationInstanceAffinity.delete(cascadeId);
           discovery.invalidateCache();
           return resolveAndCall(method, cascadeId, body, undefined, readOnly);
         } else {
-          // Application error (e.g. invalid model, internal LS error) -> throw immediately
           throw err;
         }
       }
@@ -411,8 +398,6 @@ export async function resolveAndCall<T>(
   }
 
   // Discover owner: query all LSes for trajectory summaries.
-  // Pass readOnly so heuristic fallback (RUNNING/stepCount) is only used
-  // for reads. Writes get null when workspace metadata is unavailable.
   const owner = await discoverOwnerInstance(cascadeId, instances, readOnly);
   if (owner) {
     const data = await rpc.call<T>(method, body, owner);
@@ -420,8 +405,6 @@ export async function resolveAndCall<T>(
   }
 
   // Fallback for read-only operations or targetAppDataDir with single instance:
-  // conversation not in any LS's memory (disk-only .pb file).
-  // Try available instances — the LS will auto-load from disk if the .pb exists.
   if (readOnly || (targetAppDataDir && instances.length === 1)) {
     const results: { data: T; instance: LSInstance; isRunning: boolean; stepCount: number }[] = [];
     const errors: unknown[] = [];
@@ -442,7 +425,6 @@ export async function resolveAndCall<T>(
     );
     if (results.length > 0) {
       results.sort((a, b) => {
-        // RUNNING LS is definitively the active owner
         if (a.isRunning !== b.isRunning) return a.isRunning ? -1 : 1;
         return b.stepCount - a.stepCount;
       });
@@ -485,11 +467,6 @@ export async function rpcAny<T>(
 export async function getStepCount(
   cascadeId: string,
   pinnedInstance?: LSInstance,
-  /** Enable read-only try-all fallback for disk-only conversations.
-   *  Use true only when the returned instance will NOT be pinned for
-   *  subsequent write operations (e.g. read-only steps endpoint).
-   *  Use false (default) when the instance may be reused for mutations
-   *  (e.g. SendUserCascadeMessage) to prevent writes to the wrong LS. */
   readOnly = false,
   targetAppDataDir?: string,
 ): Promise<{ count: number; instance: LSInstance | undefined }> {

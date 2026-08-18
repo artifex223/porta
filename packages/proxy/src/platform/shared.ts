@@ -7,18 +7,18 @@ const LANGUAGE_SERVER_EXECUTABLE =
   /(?:^|[\\/])(language_server(?:_[^/\\\s"']+)?|agy)(?:\.exe)?$/i;
 
 function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
 }
 
 function parseExecutable(args: string): string | undefined {
-  const match = args.match(/^(?:["']?([^"']+)["']?)/);
-  const raw = match?.[1] ?? args;
-  const lsMatch = raw.match(/^(.*?language_server[^\s]*)/i);
+  const match = args.match(/^\s*(?:["']([^"']+)["']|(\S+))/);
+  const raw = match?.[1] ?? match?.[2] ?? args;
+  const lsMatch = raw.match(/^(.*?(?:language_server|agy)[^\s]*)/i);
   return (lsMatch?.[1] ?? raw).trim();
 }
 
 export function isLanguageServerExecutable(value: string): boolean {
-  return /(?:^|[\\/])language_server(?:_[^/\\\s"']+)?(?:\.exe)?$/i.test(value.trim());
+  return /(?:^|[\\/])(?:language_server(?:_[^/\\\s"']+)?|agy)(?:\.exe)?$/i.test(value.trim());
 }
 
 function parseArgValue(args: string, flag: string): string | undefined {
@@ -71,15 +71,16 @@ export function parseCommandCandidate(
   }
 
   let csrfToken = parseArgValue(args, "--csrf_token");
+  let appDataDir = parseArgValue(args, "--app_data_dir");
   if (!csrfToken) {
     const basename = executable.replace(/^.*[\\/]/, '').toLowerCase();
     if (basename === "agy" || basename === "agy.exe") {
       csrfToken = "agy_no_csrf";
+      appDataDir = appDataDir || "antigravity-cli";
     } else {
       return undefined;
     }
   }
-  const appDataDir = parseArgValue(args, "--app_data_dir");
 
   return {
     pid,
